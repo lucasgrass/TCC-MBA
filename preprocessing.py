@@ -61,7 +61,8 @@ def preprocessing():
     # Save cleaned dataset
     df.to_csv(base_path + '/datasets/cleaned_dataset.csv', index=False)
     
-    # %% Applying LabelEncoder and One-Hot Encoder
+    # %% Applying StandardScaler, LabelEncoder and One-Hot Encoder
+    
     one_hot_encoder_variables = [
         'PaymentMethod','PaperlessBilling', 'ContentType', 'MultiDeviceAccess',
         'DeviceRegistered', 'GenrePreference', 'Gender', 'ParentalControl',
@@ -91,7 +92,7 @@ def preprocessing():
     )
     
     scaler = StandardScaler()
-    # %% Normalization in original dataset (unbalanced)
+    # %% Padronization in original dataset (unbalanced)
     
     x_train_orig = x_train.copy()
     x_validation_orig = x_validation.copy()
@@ -101,7 +102,7 @@ def preprocessing():
     x_validation_orig[numeric_cols] = scaler.transform(x_validation_orig[numeric_cols])
     x_test_orig[numeric_cols] = scaler.transform(x_test_orig[numeric_cols])
     
-    # %% Normalization in balanced dataset (Undersampling method)
+    # %% Padronization in balanced dataset (Undersampling method)
     
     rus = RandomUnderSampler(random_state=42)
     x_train_under, y_train_under = rus.fit_resample(x_train, y_train)
@@ -112,7 +113,7 @@ def preprocessing():
     x_validation_under[numeric_cols] = scaler.transform(x_validation_under[numeric_cols])
     x_test_under[numeric_cols] = scaler.transform(x_test_under[numeric_cols])
     
-    # %% Normalization in balanced dataset (Oversampling  method)
+    # %% Padronization in balanced dataset (Oversampling  method)
     
     smote = SMOTE(random_state=42)
     x_train_over, y_train_over = smote.fit_resample(x_train, y_train)
@@ -125,11 +126,32 @@ def preprocessing():
     
     # %% Save the new datasets
     
-    x_train.to_csv(base_path + '/datasets/x_train_orig.csv', index=False)
+    x_train_orig.to_csv(base_path + '/datasets/x_train_orig.csv', index=False)
     y_train.to_csv(base_path + '/datasets/y_train_orig.csv', index=False)
+    
+    x_validation_orig.to_csv(base_path + '/datasets/x_validation_orig.csv', index=False)
+    y_validation.to_csv(base_path + '/datasets/y_validation_orig.csv', index=False)
+    
+    x_test_orig.to_csv(base_path + '/datasets/x_test_orig.csv', index=False)
+    y_test.to_csv(base_path + '/datasets/y_test_orig.csv', index=False)
     
     x_train_under.to_csv(base_path + '/datasets/x_train_under.csv', index=False)
     y_train_under.to_csv(base_path + '/datasets/y_train_under.csv', index=False)
     
+    x_validation_under.to_csv(base_path + '/datasets/x_validation_under.csv', index=False)
+    y_validation.to_csv(base_path + '/datasets/y_validation_under.csv', index=False)
+    
+    x_test_under.to_csv(base_path + '/datasets/x_test_under.csv', index=False)
+    y_test.to_csv(base_path + '/datasets/y_test_under.csv', index=False)
+    
+    x_validation_over.to_csv(base_path + '/datasets/x_validation_over.csv', index=False)
+    y_validation.to_csv(base_path + '/datasets/y_validation_over.csv', index=False)
+    
+    x_test_over.to_csv(base_path + '/datasets/x_test_over.csv', index=False)
+    y_test.to_csv(base_path + '/datasets/y_test_over.csv', index=False)
+    
     x_train_over.to_csv(base_path + '/datasets/x_train_over.csv', index=False)
     y_train_over.to_csv(base_path + '/datasets/y_train_over.csv', index=False)
+
+
+
