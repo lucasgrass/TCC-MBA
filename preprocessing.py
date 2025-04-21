@@ -84,74 +84,65 @@ def preprocessing():
     x = df.drop(columns=[target_column])
     y = df['Churn']
     
-    x_train, x_validation_test, y_train, y_validation_test = train_test_split(
+    x_train, x_val_test, y_train, y_val_test = train_test_split(
         x, y, test_size=0.2, stratify=y, random_state=42)
     
-    x_validation, x_test, y_validation, y_test = train_test_split(
-        x_validation_test, y_validation_test, test_size=0.5, stratify=y_validation_test, random_state=42
+    x_val, x_test, y_val, y_test = train_test_split(
+        x_val_test, y_val_test, test_size=0.5, stratify=y_val_test, random_state=42
     )
     
     scaler = StandardScaler()
     # %% Padronization in original dataset (unbalanced)
     
     x_train_orig = x_train.copy()
-    x_validation_orig = x_validation.copy()
+    x_val_orig = x_val.copy()
     x_test_orig = x_test.copy()
     
     x_train_orig[numeric_cols] = scaler.fit_transform(x_train_orig[numeric_cols])
-    x_validation_orig[numeric_cols] = scaler.transform(x_validation_orig[numeric_cols])
+    x_val_orig[numeric_cols] = scaler.transform(x_val_orig[numeric_cols])
     x_test_orig[numeric_cols] = scaler.transform(x_test_orig[numeric_cols])
     
     # %% Padronization in balanced dataset (Undersampling method)
     
     rus = RandomUnderSampler(random_state=42)
-    x_train_under, y_train_under = rus.fit_resample(x_train, y_train)
-    
-    x_train_under[numeric_cols] = scaler.fit_transform(x_train_under[numeric_cols])
-    x_validation_under = x_validation.copy()
-    x_test_under = x_test.copy()
-    x_validation_under[numeric_cols] = scaler.transform(x_validation_under[numeric_cols])
-    x_test_under[numeric_cols] = scaler.transform(x_test_under[numeric_cols])
+    x_train_under, y_train_under = rus.fit_resample(x_train_orig, y_train)
     
     # %% Padronization in balanced dataset (Oversampling  method)
     
-    smote = SMOTE(random_state=42)
-    x_train_over, y_train_over = smote.fit_resample(x_train, y_train)
-    
-    x_train_over[numeric_cols] = scaler.fit_transform(x_train_over[numeric_cols])
-    x_validation_over = x_validation.copy()
-    x_test_over = x_test.copy()
-    x_validation_over[numeric_cols] = scaler.transform(x_validation_over[numeric_cols])
-    x_test_over[numeric_cols] = scaler.transform(x_test_over[numeric_cols])
+    smote = SMOTE(random_state=42, k_neighbors=5)
+    x_train_over, y_train_over = smote.fit_resample(x_train_orig, y_train)
     
     # %% Save the new datasets
     
-    x_train_orig.to_csv(base_path + '/datasets/x_train_orig.csv', index=False)
-    y_train.to_csv(base_path + '/datasets/y_train_orig.csv', index=False)
+    # Original
+    pd.DataFrame(x_train_orig).to_csv(f'{base_path}/datasets/x_train_orig.csv', index=False)
+    y_train.to_csv(f'{base_path}/datasets/y_train_orig.csv', index=False)
     
-    x_validation_orig.to_csv(base_path + '/datasets/x_validation_orig.csv', index=False)
-    y_validation.to_csv(base_path + '/datasets/y_validation_orig.csv', index=False)
+    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_orig.csv', index=False)
+    y_val.to_csv(f'{base_path}/datasets/y_val_orig.csv', index=False)
     
-    x_test_orig.to_csv(base_path + '/datasets/x_test_orig.csv', index=False)
-    y_test.to_csv(base_path + '/datasets/y_test_orig.csv', index=False)
+    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_orig.csv', index=False)
+    y_test.to_csv(f'{base_path}/datasets/y_test_orig.csv', index=False)
     
-    x_train_under.to_csv(base_path + '/datasets/x_train_under.csv', index=False)
-    y_train_under.to_csv(base_path + '/datasets/y_train_under.csv', index=False)
+    # Undersampled
+    pd.DataFrame(x_train_under).to_csv(f'{base_path}/datasets/x_train_under.csv', index=False)
+    pd.Series(y_train_under).to_csv(f'{base_path}/datasets/y_train_under.csv', index=False)
     
-    x_validation_under.to_csv(base_path + '/datasets/x_validation_under.csv', index=False)
-    y_validation.to_csv(base_path + '/datasets/y_validation_under.csv', index=False)
+    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_under.csv', index=False)
+    y_val.to_csv(f'{base_path}/datasets/y_val_under.csv', index=False)
     
-    x_test_under.to_csv(base_path + '/datasets/x_test_under.csv', index=False)
-    y_test.to_csv(base_path + '/datasets/y_test_under.csv', index=False)
+    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_under.csv', index=False)
+    y_test.to_csv(f'{base_path}/datasets/y_test_under.csv', index=False)
     
-    x_validation_over.to_csv(base_path + '/datasets/x_validation_over.csv', index=False)
-    y_validation.to_csv(base_path + '/datasets/y_validation_over.csv', index=False)
+    # Oversampled
+    pd.DataFrame(x_train_over).to_csv(f'{base_path}/datasets/x_train_over.csv', index=False)
+    pd.Series(y_train_over).to_csv(f'{base_path}/datasets/y_train_over.csv', index=False)
     
-    x_test_over.to_csv(base_path + '/datasets/x_test_over.csv', index=False)
-    y_test.to_csv(base_path + '/datasets/y_test_over.csv', index=False)
+    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_over.csv', index=False)
+    y_val.to_csv(f'{base_path}/datasets/y_val_over.csv', index=False)
     
-    x_train_over.to_csv(base_path + '/datasets/x_train_over.csv', index=False)
-    y_train_over.to_csv(base_path + '/datasets/y_train_over.csv', index=False)
+    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_over.csv', index=False)
+    y_test.to_csv(f'{base_path}/datasets/y_test_over.csv', index=False)
 
-
+    print(f"All datasets save in: {base_path}")
 
