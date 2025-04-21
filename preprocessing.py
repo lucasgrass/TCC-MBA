@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 import os
 
@@ -61,75 +60,88 @@ def preprocessing():
     # Save cleaned dataset
     df.to_csv(base_path + '/datasets/cleaned_dataset.csv', index=False)
     
-    # %% Applying LabelEncoder and One-Hot Encoder
+    # %% Applying StandardScaler, LabelEncoder and One-Hot Encoder
+    
     one_hot_encoder_variables = [
-        'PaymentMethod','PaperlessBilling', 'ContentType', 'MultiDeviceAccess',
-        'DeviceRegistered', 'GenrePreference', 'Gender', 'ParentalControl',
-        'SubtitlesEnabled'
+        'PaymentMethod','PaperlessBilling', 
+        'MultiDeviceAccess', 'GenrePreference', 'Gender', 
+        'ParentalControl', 'SubtitlesEnabled'
         ]
     
-    le = LabelEncoder()
-    
-    df['SubscriptionType_le'] = le.fit_transform(df['SubscriptionType'])
-    
-    df = df.drop(columns=['SubscriptionType'])
-    
-    print(df['SubscriptionType_le'].value_counts())
+    label_encoder = LabelEncoder()
+    df['SubscriptionType'] = label_encoder.fit_transform(df['SubscriptionType'])
     
     df = pd.get_dummies(df, columns=one_hot_encoder_variables, drop_first=False)
+    
+    # %% Drop columns
+    
+    df.drop(['DeviceRegistered', 'ContentType'], axis=1, inplace=True) 
     
     # %%
     
     x = df.drop(columns=[target_column])
     y = df['Churn']
     
-    x_train, x_validation_test, y_train, y_validation_test = train_test_split(
+    x_train, x_val_test, y_train, y_val_test = train_test_split(
         x, y, test_size=0.2, stratify=y, random_state=42)
     
-    x_validation, x_test, y_validation, y_test = train_test_split(
-        x_validation_test, y_validation_test, test_size=0.5, stratify=y_validation_test, random_state=42
+    x_val, x_test, y_val, y_test = train_test_split(
+        x_val_test, y_val_test, test_size=0.5, stratify=y_val_test, random_state=42
     )
     
-    scaler = StandardScaler()
-    # %% Normalization in original dataset (unbalanced)
+    # %% Padronization in original dataset (unbalanced)
     
     x_train_orig = x_train.copy()
-    x_validation_orig = x_validation.copy()
+    x_val_orig = x_val.copy()
     x_test_orig = x_test.copy()
     
+    scaler = StandardScaler()
+    
     x_train_orig[numeric_cols] = scaler.fit_transform(x_train_orig[numeric_cols])
-    x_validation_orig[numeric_cols] = scaler.transform(x_validation_orig[numeric_cols])
+    x_val_orig[numeric_cols] = scaler.transform(x_val_orig[numeric_cols])
     x_test_orig[numeric_cols] = scaler.transform(x_test_orig[numeric_cols])
     
-    # %% Normalization in balanced dataset (Undersampling method)
+    # %% Padronization in balanced dataset (Undersampling method)
     
     rus = RandomUnderSampler(random_state=42)
-    x_train_under, y_train_under = rus.fit_resample(x_train, y_train)
+    x_train_under, y_train_under = rus.fit_resample(x_train_orig, y_train)
     
-    x_train_under[numeric_cols] = scaler.fit_transform(x_train_under[numeric_cols])
-    x_validation_under = x_validation.copy()
-    x_test_under = x_test.copy()
-    x_validation_under[numeric_cols] = scaler.transform(x_validation_under[numeric_cols])
-    x_test_under[numeric_cols] = scaler.transform(x_test_under[numeric_cols])
+    # %% Padronization in balanced dataset (Oversampling  method)
     
-    # %% Normalization in balanced dataset (Oversampling  method)
-    
-    smote = SMOTE(random_state=42)
-    x_train_over, y_train_over = smote.fit_resample(x_train, y_train)
-    
-    x_train_over[numeric_cols] = scaler.fit_transform(x_train_over[numeric_cols])
-    x_validation_over = x_validation.copy()
-    x_test_over = x_test.copy()
-    x_validation_over[numeric_cols] = scaler.transform(x_validation_over[numeric_cols])
-    x_test_over[numeric_cols] = scaler.transform(x_test_over[numeric_cols])
+    smote = SMOTE(random_state=42, k_neighbors=5)
+    x_train_over, y_train_over = smote.fit_resample(x_train_orig, y_train)
     
     # %% Save the new datasets
     
-    x_train.to_csv(base_path + '/datasets/x_train_orig.csv', index=False)
-    y_train.to_csv(base_path + '/datasets/y_train_orig.csv', index=False)
+    # Original
+    pd.DataFrame(x_train_orig).to_csv(f'{base_path}/datasets/x_train_orig.csv', index=False)
+    y_train.to_csv(f'{base_path}/datasets/y_train_orig.csv', index=False)
     
-    x_train_under.to_csv(base_path + '/datasets/x_train_under.csv', index=False)
-    y_train_under.to_csv(base_path + '/datasets/y_train_under.csv', index=False)
+    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_orig.csv', index=False)
+    y_val.to_csv(f'{base_path}/datasets/y_val_orig.csv', index=False)
     
-    x_train_over.to_csv(base_path + '/datasets/x_train_over.csv', index=False)
-    y_train_over.to_csv(base_path + '/datasets/y_train_over.csv', index=False)
+    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_orig.csv', index=False)
+    y_test.to_csv(f'{base_path}/datasets/y_test_orig.csv', index=False)
+    
+    # Undersampled
+    pd.DataFrame(x_train_under).to_csv(f'{base_path}/datasets/x_train_under.csv', index=False)
+    pd.Series(y_train_under).to_csv(f'{base_path}/datasets/y_train_under.csv', index=False)
+    
+    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_under.csv', index=False)
+    y_val.to_csv(f'{base_path}/datasets/y_val_under.csv', index=False)
+    
+    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_under.csv', index=False)
+    y_test.to_csv(f'{base_path}/datasets/y_test_under.csv', index=False)
+    
+    # Oversampled
+    pd.DataFrame(x_train_over).to_csv(f'{base_path}/datasets/x_train_over.csv', index=False)
+    pd.Series(y_train_over).to_csv(f'{base_path}/datasets/y_train_over.csv', index=False)
+    
+    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_over.csv', index=False)
+    y_val.to_csv(f'{base_path}/datasets/y_val_over.csv', index=False)
+    
+    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_over.csv', index=False)
+    y_test.to_csv(f'{base_path}/datasets/y_test_over.csv', index=False)
+    
+    print(f"All datasets saved in: {base_path}")
+
