@@ -6,7 +6,7 @@
 
 ### 1. Preprocessing ✅  
 
-### 3. Model Training ⏳  
+### 3. Model Training ✅
 
 ### 4. Evaluation ⏳
 
