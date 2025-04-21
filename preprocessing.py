@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 import os
 
@@ -64,10 +63,13 @@ def preprocessing():
     # %% Applying StandardScaler, LabelEncoder and One-Hot Encoder
     
     one_hot_encoder_variables = [
-        'SubscriptionType', 'PaymentMethod','PaperlessBilling', 
+        'PaymentMethod','PaperlessBilling', 
         'MultiDeviceAccess', 'GenrePreference', 'Gender', 
         'ParentalControl', 'SubtitlesEnabled'
         ]
+    
+    label_encoder = LabelEncoder()
+    df['SubscriptionType'] = label_encoder.fit_transform(df['SubscriptionType'])
     
     df = pd.get_dummies(df, columns=one_hot_encoder_variables, drop_first=False)
     

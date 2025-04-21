@@ -1,7 +1,12 @@
+from preprocessing import preprocessing
 from models import run_experiment, save_results
 from datetime import datetime
 
 def main():
+    
+    
+    preprocessing()
+    
     experiments = [
         {
             "model": "logistic_regression",
