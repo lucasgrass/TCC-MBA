@@ -64,20 +64,16 @@ def preprocessing():
     # %% Applying StandardScaler, LabelEncoder and One-Hot Encoder
     
     one_hot_encoder_variables = [
-        'PaymentMethod','PaperlessBilling', 'ContentType', 'MultiDeviceAccess',
-        'DeviceRegistered', 'GenrePreference', 'Gender', 'ParentalControl',
-        'SubtitlesEnabled'
+        'SubscriptionType', 'PaymentMethod','PaperlessBilling', 
+        'MultiDeviceAccess', 'GenrePreference', 'Gender', 
+        'ParentalControl', 'SubtitlesEnabled'
         ]
     
-    le = LabelEncoder()
-    
-    df['SubscriptionType_le'] = le.fit_transform(df['SubscriptionType'])
-    
-    df = df.drop(columns=['SubscriptionType'])
-    
-    print(df['SubscriptionType_le'].value_counts())
-    
     df = pd.get_dummies(df, columns=one_hot_encoder_variables, drop_first=False)
+    
+    # %% Drop columns
+    
+    df.drop(['DeviceRegistered', 'ContentType'], axis=1, inplace=True) 
     
     # %%
     
@@ -91,12 +87,13 @@ def preprocessing():
         x_val_test, y_val_test, test_size=0.5, stratify=y_val_test, random_state=42
     )
     
-    scaler = StandardScaler()
     # %% Padronization in original dataset (unbalanced)
     
     x_train_orig = x_train.copy()
     x_val_orig = x_val.copy()
     x_test_orig = x_test.copy()
+    
+    scaler = StandardScaler()
     
     x_train_orig[numeric_cols] = scaler.fit_transform(x_train_orig[numeric_cols])
     x_val_orig[numeric_cols] = scaler.transform(x_val_orig[numeric_cols])
@@ -143,6 +140,6 @@ def preprocessing():
     
     pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_over.csv', index=False)
     y_test.to_csv(f'{base_path}/datasets/y_test_over.csv', index=False)
-
-    print(f"All datasets save in: {base_path}")
+    
+    print(f"All datasets saved in: {base_path}")
 
