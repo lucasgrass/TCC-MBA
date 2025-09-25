@@ -2,146 +2,179 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 import os
 
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
-from imblearn.under_sampling import RandomUnderSampler
+from imblearn.under_sampling import EditedNearestNeighbours
 from imblearn.over_sampling import SMOTE
 
 from utils import drop_outliers
 
 # %%
 def preprocessing():
-        
     base_path = os.path.dirname(os.path.abspath(__file__))
-    
     target_column = 'Churn'
     
+    # --- Load dataset ---
     df = pd.read_csv(os.path.join(base_path, 'datasets/raw.csv'), sep=',', decimal='.')
+    print("Churn value counts:\n", df['Churn'].value_counts())
     
-    print(df['Churn'].value_counts())
-    
-    #  Unique identifiers do not impact model predictions 
-    df.drop('CustomerID', axis=1, inplace=True)
-    
-    # Check if there is null values
-    print('\n null values:', df.isnull().sum())
+    # --- Clean dataset ---
+    print("\nNull values:", df.isnull().sum())
     df.dropna(inplace=True)
     
-    #  Check if there is duplicate lines
-    print('\nDuplicated lines:', df.duplicated().sum())
+    print("\nDuplicated lines:", df.duplicated().sum())
     df = df.drop_duplicates().reset_index(drop=True)
     
-    
-    # Removing outliers
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    num_plots = len(numeric_cols)
-    fig, axs = plt.subplots(num_plots, 1, dpi=95, figsize=(7, num_plots * 2))
-    
-    for i, col in enumerate(numeric_cols):
-        axs[i].boxplot(df[col], vert=False)
-        axs[i].set_ylabel(col)
-    plt.tight_layout()
-    plt.show()
-    
-    print('\nBefore outliers function:', df.shape)
-    
-    numeric_cols = [col for col in numeric_cols if col != target_column]
+    # --- Remove outliers ---
+    numeric_cols = [col for col in df.select_dtypes(include=[np.number]).columns if col != target_column]
+    print("\nBefore outliers removal:", df.shape)
     
     for col in numeric_cols:
         df = drop_outliers(df, col)
     
-    print('\nAfter outliers function:', df.shape)
+    print("After outliers removal:", df.shape)
     
-    print(df['Churn'].value_counts())
+    # --- Feature engineering ---
+
+        # 1. COMPORTAMENTO DE USO E ENGAJAMENTO
+    df['Avg_Session_Length_Minutes'] = df['ViewingHoursPerWeek'] * 60 / (df['AverageViewingDuration'] + 0.01)
+    df['Content_Consumption_Score'] = df['ViewingHoursPerWeek'] * df['AverageViewingDuration']
+    df['Downloads_per_ViewingHour'] = df['ContentDownloadsPerMonth'] / (df['ViewingHoursPerWeek'] + 0.01)
     
-    # Save cleaned dataset
-    df.to_csv(base_path + '/datasets/cleaned_dataset.csv', index=False)
+    # 2. RELAÇÃO CUSTO-VALOR (MUITO IMPORTANTE PARA CHURN)
+    df['Value_Per_Hour'] = df['MonthlyCharges'] / (df['ViewingHoursPerWeek'] + 0.01)
+    df['Charge_Increase_Ratio'] = df['MonthlyCharges'] / (df['TotalCharges'] / (df['AccountAge'] + 0.01))
+    df['Lifetime_Value_Score'] = df['TotalCharges'] / (df['AccountAge'] + 0.01)
     
-    # %% Applying StandardScaler, LabelEncoder and One-Hot Encoder
+    # 3. COMPORTAMENTO DE SUPORTE (CRÍTICO PARA CHURN)
+    df['Support_Intensity'] = df['SupportTicketsPerMonth'] / (df['AccountAge'] + 0.01)
+    df['Rating_vs_Support'] = df['UserRating'] - (df['SupportTicketsPerMonth'] * 0.5)  # quanto mais tickets, pior o rating relativo
     
-    one_hot_encoder_variables = [
-        'PaymentMethod','PaperlessBilling', 
-        'MultiDeviceAccess', 'GenrePreference', 'Gender', 
-        'ParentalControl', 'SubtitlesEnabled'
-        ]
+    # 4. PADRÕES DE USUÁRIO
+    df['Watchlist_Utilization'] = df['WatchlistSize'] / (df['ViewingHoursPerWeek'] + 0.01)
+    df['Engagement_Consistency'] = df['ViewingHoursPerWeek'] / (df['AccountAge'] + 0.01)
+    
+    # 5. SINALIZADORES COMPORTAMENTAIS (MUITO PREDITIVOS)
+    # Usuário caro que pouco usa
+    df['High_Cost_Low_Usage'] = ((df['MonthlyCharges'] > df['MonthlyCharges'].median()) & 
+                                (df['ViewingHoursPerWeek'] < df['ViewingHoursPerWeek'].median())).astype(int)
+    
+    # Muitos tickets em pouco tempo
+    df['Support_Heavy_New_User'] = ((df['AccountAge'] < 6) & 
+                                   (df['SupportTicketsPerMonth'] > 2)).astype(int)
+    
+    # Baixa avaliação apesar de bom uso
+    df['Unhappy_Active_User'] = ((df['UserRating'] < 3) & 
+                                (df['ViewingHoursPerWeek'] > df['ViewingHoursPerWeek'].median())).astype(int)
+    
+    # 6. INTERAÇÕES ENTRE VARIÁVEIS
+    df['Premium_Low_Usage'] = ((df['SubscriptionType'] == 'Premium') & 
+                              (df['ViewingHoursPerWeek'] < 10)).astype(int)
+    
+    df['High_Downloads_Low_Viewing'] = ((df['ContentDownloadsPerMonth'] > df['ContentDownloadsPerMonth'].median()) & 
+                                       (df['ViewingHoursPerWeek'] < df['ViewingHoursPerWeek'].median())).astype(int)
+    
+        # Segmentação por valor do cliente
+    df['Customer_Value_Segment'] = pd.cut(
+        df['TotalCharges'], 
+        bins=[0, 100, 500, 2000, df['TotalCharges'].max() + 1],
+        labels=['low', 'medium', 'high', 'vip']
+    )
+    
+    # Segmentação por engajamento
+    df['Engagement_Segment'] = pd.cut(
+        df['ViewingHoursPerWeek'], 
+        bins=[0, 5, 15, 30, df['ViewingHoursPerWeek'].max() + 1],
+        labels=['inactive', 'casual', 'active', 'power_user']
+    )
+    
+    # Segmentação por suporte
+    df['Support_Profile'] = pd.cut(
+        df['SupportTicketsPerMonth'], 
+        bins=[-1, 0, 2, 5, df['SupportTicketsPerMonth'].max() + 1],
+        labels=['no_support', 'low_support', 'medium_support', 'high_support']
+    )
+
+    # df['AccountAge_Segment'] = pd.cut(
+    #     df['AccountAge'], bins=[0, 24, 60, df['AccountAge'].max() + 1],
+    #     labels=['new', 'standard', 'old']
+    # )
+    
+    # df['SupportTicketsPerMonth_Segment'] = pd.cut(
+    #     df['SupportTicketsPerMonth'], bins=[-1, 1, 5, df['SupportTicketsPerMonth'].max() + 1],
+    #     labels=['low', 'medium', 'high']
+    # )
+
+    # df['Watchlist_per_Week'] = df['WatchlistSize'] / (df['ViewingHoursPerWeek'] + 0.01) 
+    # df['AverageViewingDuration_per_Week'] = df['AverageViewingDuration'] / (df['ViewingHoursPerWeek'] + 0.01)
+
+    # numeric_cols.extend(['Watchlist_per_Week', 'AverageViewingDuration_per_Week'])
+    
+    # Drop CustomerID
+    if 'CustomerID' in df.columns:
+        df.drop('CustomerID', axis=1, inplace=True)
+    
+    # --- Encoding ---
+    print("Number of columns before encoding:", df.shape[1])
     
     label_encoder = LabelEncoder()
     df['SubscriptionType'] = label_encoder.fit_transform(df['SubscriptionType'])
     
+    one_hot_encoder_variables = [
+        'PaymentMethod', 'PaperlessBilling', 'ContentType', 'MultiDeviceAccess',
+        'DeviceRegistered', 'GenrePreference', 'Gender', 'ParentalControl',
+        'SubtitlesEnabled', 'AccountAge_Segment', 'SupportTicketsPerMonth_Segment'
+    ]
+    
     df = pd.get_dummies(df, columns=one_hot_encoder_variables, drop_first=False)
     
-    # %% Drop columns
+    print("Number of columns after encoding:", df.shape[1])
     
-    df.drop(['DeviceRegistered', 'ContentType'], axis=1, inplace=True) 
+    # --- Split dataset ---
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
     
-    # %%
-    
-    x = df.drop(columns=[target_column])
-    y = df['Churn']
-    
-    x_train, x_val_test, y_train, y_val_test = train_test_split(
-        x, y, test_size=0.2, stratify=y, random_state=42)
-    
-    x_val, x_test, y_val, y_test = train_test_split(
-        x_val_test, y_val_test, test_size=0.5, stratify=y_val_test, random_state=42
+    X_train, X_val_test, y_train, y_val_test = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=42
     )
     
-    # %% Padronization in original dataset (unbalanced)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_val_test, y_val_test, test_size=0.5, stratify=y_val_test, random_state=42
+    )
     
-    x_train_orig = x_train.copy()
-    x_val_orig = x_val.copy()
-    x_test_orig = x_test.copy()
-    
+    # --- StandardScaler ---
     scaler = StandardScaler()
+    X_train_scaled = X_train.copy()
+    X_val_scaled = X_val.copy()
+    X_test_scaled = X_test.copy()
     
-    x_train_orig[numeric_cols] = scaler.fit_transform(x_train_orig[numeric_cols])
-    x_val_orig[numeric_cols] = scaler.transform(x_val_orig[numeric_cols])
-    x_test_orig[numeric_cols] = scaler.transform(x_test_orig[numeric_cols])
+    X_train_scaled[numeric_cols] = scaler.fit_transform(X_train_scaled[numeric_cols])
+    X_val_scaled[numeric_cols] = scaler.transform(X_val_scaled[numeric_cols])
+    X_test_scaled[numeric_cols] = scaler.transform(X_test_scaled[numeric_cols])
     
-    # %% Padronization in balanced dataset (Undersampling method)
+    # --- Undersampling (ENN) ---
+    enn = EditedNearestNeighbours()
+    X_train_under, y_train_under = enn.fit_resample(X_train_scaled, y_train)
     
-    rus = RandomUnderSampler(random_state=42)
-    x_train_under, y_train_under = rus.fit_resample(x_train_orig, y_train)
-    
-    # %% Padronization in balanced dataset (Oversampling  method)
-    
+    # --- Oversampling (SMOTE) ---
     smote = SMOTE(random_state=42, k_neighbors=5)
-    x_train_over, y_train_over = smote.fit_resample(x_train_orig, y_train)
+    X_train_over, y_train_over = smote.fit_resample(X_train_scaled, y_train)
     
-    # %% Save the new datasets
+    # --- Save datasets ---
+    datasets = [
+        ('orig', X_train_scaled, y_train),
+        ('under', X_train_under, y_train_under),
+        ('over', X_train_over, y_train_over)
+    ]
     
-    # Original
-    pd.DataFrame(x_train_orig).to_csv(f'{base_path}/datasets/x_train_orig.csv', index=False)
-    y_train.to_csv(f'{base_path}/datasets/y_train_orig.csv', index=False)
-    
-    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_orig.csv', index=False)
-    y_val.to_csv(f'{base_path}/datasets/y_val_orig.csv', index=False)
-    
-    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_orig.csv', index=False)
-    y_test.to_csv(f'{base_path}/datasets/y_test_orig.csv', index=False)
-    
-    # Undersampled
-    pd.DataFrame(x_train_under).to_csv(f'{base_path}/datasets/x_train_under.csv', index=False)
-    pd.Series(y_train_under).to_csv(f'{base_path}/datasets/y_train_under.csv', index=False)
-    
-    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_under.csv', index=False)
-    y_val.to_csv(f'{base_path}/datasets/y_val_under.csv', index=False)
-    
-    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_under.csv', index=False)
-    y_test.to_csv(f'{base_path}/datasets/y_test_under.csv', index=False)
-    
-    # Oversampled
-    pd.DataFrame(x_train_over).to_csv(f'{base_path}/datasets/x_train_over.csv', index=False)
-    pd.Series(y_train_over).to_csv(f'{base_path}/datasets/y_train_over.csv', index=False)
-    
-    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_over.csv', index=False)
-    y_val.to_csv(f'{base_path}/datasets/y_val_over.csv', index=False)
-    
-    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_over.csv', index=False)
-    y_test.to_csv(f'{base_path}/datasets/y_test_over.csv', index=False)
+    for prefix, X_tr, y_tr in datasets:
+        X_tr.to_csv(os.path.join(base_path, f'datasets/x_train_{prefix}.csv'), index=False)
+        y_tr.to_csv(os.path.join(base_path, f'datasets/y_train_{prefix}.csv'), index=False)
+        X_val_scaled.to_csv(os.path.join(base_path, f'datasets/x_val_{prefix}.csv'), index=False)
+        y_val.to_csv(os.path.join(base_path, f'datasets/y_val_{prefix}.csv'), index=False)
+        X_test_scaled.to_csv(os.path.join(base_path, f'datasets/x_test_{prefix}.csv'), index=False)
+        y_test.to_csv(os.path.join(base_path, f'datasets/y_test_{prefix}.csv'), index=False)
     
     print(f"All datasets saved in: {base_path}")
-
