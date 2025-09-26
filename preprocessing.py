@@ -1,147 +1,156 @@
 # %%
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
 import os
-
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.model_selection import train_test_split
+import pandas as pd
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
+from utils import drop_outliers, onehot_encode, label_encode, label_encode_with_category_simple, scale_numeric, train_val_test_split
 
-from utils import drop_outliers
-
-# %%
-def preprocessing():
-        
+def load_and_clean_data():
     base_path = os.path.dirname(os.path.abspath(__file__))
-    
-    target_column = 'Churn'
-    
     df = pd.read_csv(os.path.join(base_path, 'datasets/raw.csv'), sep=',', decimal='.')
     
-    print(df['Churn'].value_counts())
-    
-    #  Unique identifiers do not impact model predictions 
     df.drop('CustomerID', axis=1, inplace=True)
-    
-    # Check if there is null values
-    print('\n null values:', df.isnull().sum())
     df.dropna(inplace=True)
-    
-    #  Check if there is duplicate lines
-    print('\nDuplicated lines:', df.duplicated().sum())
     df = df.drop_duplicates().reset_index(drop=True)
-    
-    
-    # Removing outliers
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    num_plots = len(numeric_cols)
-    fig, axs = plt.subplots(num_plots, 1, dpi=95, figsize=(7, num_plots * 2))
-    
-    for i, col in enumerate(numeric_cols):
-        axs[i].boxplot(df[col], vert=False)
-        axs[i].set_ylabel(col)
-    plt.tight_layout()
-    plt.show()
-    
+
+    numeric_cols = [
+      'AccountAge',
+      'MonthlyCharges',
+      'TotalCharges',
+      'ViewingHoursPerWeek',
+      'AverageViewingDuration',
+      'ContentDownloadsPerMonth',
+      'UserRating',
+      'SupportTicketsPerMonth',
+      'WatchlistSize'
+    ]
+
     print('\nBefore outliers function:', df.shape)
-    
-    numeric_cols = [col for col in numeric_cols if col != target_column]
-    
+  
     for col in numeric_cols:
         df = drop_outliers(df, col)
     
     print('\nAfter outliers function:', df.shape)
     
-    print(df['Churn'].value_counts())
-    
-    # Save cleaned dataset
-    df.to_csv(base_path + '/datasets/cleaned_dataset.csv', index=False)
-    
-    # %% Applying StandardScaler, LabelEncoder and One-Hot Encoder
-    
-    one_hot_encoder_variables = [
-        'PaymentMethod','PaperlessBilling', 
-        'MultiDeviceAccess', 'GenrePreference', 'Gender', 
-        'ParentalControl', 'SubtitlesEnabled'
-        ]
-    
-    label_encoder = LabelEncoder()
-    df['SubscriptionType'] = label_encoder.fit_transform(df['SubscriptionType'])
-    
-    df = pd.get_dummies(df, columns=one_hot_encoder_variables, drop_first=False)
-    
-    # %% Drop columns
-    
-    df.drop(['DeviceRegistered', 'ContentType'], axis=1, inplace=True) 
-    
-    # %%
-    
-    x = df.drop(columns=[target_column])
-    y = df['Churn']
-    
-    x_train, x_val_test, y_train, y_val_test = train_test_split(
-        x, y, test_size=0.2, stratify=y, random_state=42)
-    
-    x_val, x_test, y_val, y_test = train_test_split(
-        x_val_test, y_val_test, test_size=0.5, stratify=y_val_test, random_state=42
-    )
-    
-    # %% Padronization in original dataset (unbalanced)
-    
-    x_train_orig = x_train.copy()
-    x_val_orig = x_val.copy()
-    x_test_orig = x_test.copy()
-    
-    scaler = StandardScaler()
-    
-    x_train_orig[numeric_cols] = scaler.fit_transform(x_train_orig[numeric_cols])
-    x_val_orig[numeric_cols] = scaler.transform(x_val_orig[numeric_cols])
-    x_test_orig[numeric_cols] = scaler.transform(x_test_orig[numeric_cols])
-    
-    # %% Padronization in balanced dataset (Undersampling method)
-    
-    rus = RandomUnderSampler(random_state=42)
-    x_train_under, y_train_under = rus.fit_resample(x_train_orig, y_train)
-    
-    # %% Padronization in balanced dataset (Oversampling  method)
-    
-    smote = SMOTE(random_state=42, k_neighbors=5)
-    x_train_over, y_train_over = smote.fit_resample(x_train_orig, y_train)
-    
-    # %% Save the new datasets
-    
-    # Original
-    pd.DataFrame(x_train_orig).to_csv(f'{base_path}/datasets/x_train_orig.csv', index=False)
-    y_train.to_csv(f'{base_path}/datasets/y_train_orig.csv', index=False)
-    
-    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_orig.csv', index=False)
-    y_val.to_csv(f'{base_path}/datasets/y_val_orig.csv', index=False)
-    
-    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_orig.csv', index=False)
-    y_test.to_csv(f'{base_path}/datasets/y_test_orig.csv', index=False)
-    
-    # Undersampled
-    pd.DataFrame(x_train_under).to_csv(f'{base_path}/datasets/x_train_under.csv', index=False)
-    pd.Series(y_train_under).to_csv(f'{base_path}/datasets/y_train_under.csv', index=False)
-    
-    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_under.csv', index=False)
-    y_val.to_csv(f'{base_path}/datasets/y_val_under.csv', index=False)
-    
-    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_under.csv', index=False)
-    y_test.to_csv(f'{base_path}/datasets/y_test_under.csv', index=False)
-    
-    # Oversampled
-    pd.DataFrame(x_train_over).to_csv(f'{base_path}/datasets/x_train_over.csv', index=False)
-    pd.Series(y_train_over).to_csv(f'{base_path}/datasets/y_train_over.csv', index=False)
-    
-    pd.DataFrame(x_val_orig).to_csv(f'{base_path}/datasets/x_val_over.csv', index=False)
-    y_val.to_csv(f'{base_path}/datasets/y_val_over.csv', index=False)
-    
-    pd.DataFrame(x_test_orig).to_csv(f'{base_path}/datasets/x_test_over.csv', index=False)
-    y_test.to_csv(f'{base_path}/datasets/y_test_over.csv', index=False)
-    
-    print(f"All datasets saved in: {base_path}")
+    return df, base_path
 
+def balance_dataset(X_train, y_train):
+    rus = RandomUnderSampler(random_state=42)
+    smote = SMOTE(random_state=42)
+    
+    X_train_under, y_train_under = rus.fit_resample(X_train, y_train)
+    X_train_over, y_train_over = smote.fit_resample(X_train, y_train)
+    
+    return {
+        'orig': (X_train, y_train),
+        'under': (X_train_under, y_train_under),
+        'over': (X_train_over, y_train_over)
+    }
+
+def create_all_features_datasets(df, base_path):
+    """Versão otimizada - mais eficiente e limpa"""
+    target_col = 'Churn'
+    feat_name = 'all'
+
+    numeric_cols = [
+        'AccountAge', 'MonthlyCharges', 'TotalCharges', 'ViewingHoursPerWeek',
+        'AverageViewingDuration', 'ContentDownloadsPerMonth', 'UserRating',
+        'SupportTicketsPerMonth', 'WatchlistSize'
+    ]
+
+    categorical_cols = [
+        'SubscriptionType', 'PaymentMethod', 'PaperlessBilling', 'ContentType',
+        'MultiDeviceAccess', 'DeviceRegistered', 'GenrePreference', 'Gender',
+        'ParentalControl', 'SubtitlesEnabled'
+    ]
+
+    X = df.drop(columns=[target_col])
+    y = df[target_col]
+
+    X_train, X_val, X_test, y_train, y_val, y_test = train_val_test_split(X, y)
+
+    # 1) one-hot
+    X_tr_oh, X_val_oh, X_test_oh = onehot_encode(X_train, X_val, X_test, categorical_cols)
+    
+    # One-hot w/o scaling
+    save_dataset(X_tr_oh, X_val_oh, X_test_oh, y_train, y_val, y_test,
+                 base_path, feat_name, 'orig', 'onehot')
+
+    # One-hot with scaling
+    X_tr_scaled, X_val_scaled, X_test_scaled = scale_numeric(X_tr_oh, X_val_oh, X_test_oh, numeric_cols)
+    save_dataset(X_tr_scaled, X_val_scaled, X_test_scaled, y_train, y_val, y_test,
+                 base_path, feat_name, 'orig', 'onehot_scaled')
+
+    # 2) Label encoding + category w/o scaling
+    X_tr_le, X_val_le, X_test_le = label_encode_with_category_simple(X_train, X_val, X_test, categorical_cols)
+    save_dataset(X_tr_le, X_val_le, X_test_le, y_train, y_val, y_test,
+                 base_path, feat_name, 'orig', 'label_category')
+
+
+def create_top10_datasets(df, base_path):
+
+    target_col = 'Churn'
+    feat_name = 'top10'
+      
+    top10_features = [
+        'AccountAge', 'MonthlyCharges', 'TotalCharges', 'SubscriptionType',
+        'DeviceRegistered', 'ViewingHoursPerWeek', 'ContentDownloadsPerMonth',
+        'UserRating', 'SupportTicketsPerMonth', 'WatchlistSize'
+    ]
+
+    top10_numeric = [
+        'AccountAge', 'MonthlyCharges', 'TotalCharges', 'ViewingHoursPerWeek',
+        'ContentDownloadsPerMonth', 'UserRating', 'SupportTicketsPerMonth', 'WatchlistSize'
+    ]
+
+    top10_categorical = [
+        'SubscriptionType', 'DeviceRegistered'
+    ]
+    
+    X = df[top10_features]
+    y = df[target_col]
+    
+    X_train, X_val, X_test, y_train, y_val, y_test = train_val_test_split(X, y)
+    
+    # 1) one-hot
+    X_tr_oh, X_val_oh, X_test_oh = onehot_encode(X_train, X_val, X_test, top10_categorical)
+    
+    # One-hot w/o scaling
+    save_dataset(X_tr_oh, X_val_oh, X_test_oh, y_train, y_val, y_test,
+                base_path, feat_name, 'orig', 'onehot')
+    
+    # One-hot with scaling
+    X_tr_scaled, X_val_scaled, X_test_scaled = scale_numeric(X_tr_oh, X_val_oh, X_test_oh, top10_numeric)
+    save_dataset(X_tr_scaled, X_val_scaled, X_test_scaled, y_train, y_val, y_test,
+                base_path, feat_name, 'orig', 'onehot_scaled')
+
+    # 2) Label encoding + category w/o scaling
+    X_tr_le, X_val_le, X_test_le = label_encode_with_category_simple(X_train, X_val, X_test, top10_categorical)
+    save_dataset(X_tr_le, X_val_le, X_test_le, y_train, y_val, y_test,
+                base_path, feat_name, 'orig', 'label_category')
+
+def save_dataset(X_tr, X_val, X_test, y_tr, y_val, y_test, base_path, feat_name, bal_key, type_name):
+
+    path = os.path.join(base_path, 'datasets', f"{feat_name}_{bal_key}_{type_name}")
+    os.makedirs(path, exist_ok=True)
+    
+    X_tr.to_csv(os.path.join(path, 'x_train.csv'), index=False)
+    X_val.to_csv(os.path.join(path, 'x_val.csv'), index=False)
+    X_test.to_csv(os.path.join(path, 'x_test.csv'), index=False)
+    y_tr.to_csv(os.path.join(path, 'y_train.csv'), index=False)
+    y_val.to_csv(os.path.join(path, 'y_val.csv'), index=False)
+    y_test.to_csv(os.path.join(path, 'y_test.csv'), index=False)
+    
+    print(f"Saved: {feat_name}_{bal_key}_{type_name}")
+
+def preprocessing():
+
+    df, base_path = load_and_clean_data()
+    
+    os.makedirs(os.path.join(base_path, 'datasets'), exist_ok=True)
+    
+    create_all_features_datasets(df, base_path)
+    
+    create_top10_datasets(df, base_path)
+
+    print(f"\n🎉 ALL DATASETS CREATED SUCCESSFULLY!")

@@ -1,0 +1,32 @@
+feature_name
+AccountAge
+MonthlyCharges
+TotalCharges
+ViewingHoursPerWeek
+AverageViewingDuration
+ContentDownloadsPerMonth
+UserRating
+SupportTicketsPerMonth
+WatchlistSize
+SubscriptionType_encoded
+DeviceRegistered_ChurnRate
+GenrePreference_ChurnRate
+PaymentMethod_ChurnRate
+ContentType_ChurnRate
+PaymentMethod_Credit card
+PaymentMethod_Electronic check
+PaymentMethod_Mailed check
+PaperlessBilling_Yes
+ContentType_Movies
+ContentType_TV Shows
+MultiDeviceAccess_Yes
+DeviceRegistered_Mobile
+DeviceRegistered_TV
+DeviceRegistered_Tablet
+GenrePreference_Comedy
+GenrePreference_Drama
+GenrePreference_Fantasy
+GenrePreference_Sci-Fi
+Gender_Male
+ParentalControl_Yes
+SubtitlesEnabled_Yes

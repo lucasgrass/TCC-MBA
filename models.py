@@ -1,14 +1,13 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from lightgbm import LGBMClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from datetime import datetime
 import pandas as pd
 import os
 
 def load_datasets(dataset_name):
-
     paths = {
         'x_train': f"./datasets/x_train_{dataset_name}.csv",
         'y_train': f"./datasets/y_train_{dataset_name}.csv",
@@ -20,18 +19,32 @@ def load_datasets(dataset_name):
     datasets['y_train'] = datasets['y_train'].squeeze()
     datasets['y_test'] = datasets['y_test'].squeeze()
     
+    if dataset_name == "clean":
+        # Definir colunas categóricas apenas para o dataset clean
+        categorical_cols = [
+            'SubscriptionType', 'PaymentMethod','PaperlessBilling', 
+            'MultiDeviceAccess', 'GenrePreference', 'Gender', 
+            'ParentalControl', 'SubtitlesEnabled', 'ContentType', 'DeviceRegistered'
+        ]
+        
+        for col in categorical_cols:
+            if col in datasets['x_train'].columns:
+                datasets['x_train'][col] = datasets['x_train'][col].astype('category')
+                datasets['x_test'][col] = datasets['x_test'][col].astype('category')
+    
     return datasets
+
 
 def evaluate_model(model, x_test, y_test, model_name=None, threshold=None):
     y_prob = model.predict_proba(x_test)[:, 1]
     
     if threshold is None:
         if model_name == 'logistic_regression':
-            threshold = 0.4
+            threshold = 0.5
         elif model_name == 'random_forest':
             threshold = 0.5
         elif model_name == 'xgboost':
-            threshold = 0.45
+            threshold = 0.5
         else:
             threshold = 0.5
     
@@ -52,7 +65,8 @@ def get_model(model_name, params):
         'logistic_regression': LogisticRegression,
         'random_forest': RandomForestClassifier,
         'xgboost': XGBClassifier,
-        'svm': SVC
+        'decision_tree': DecisionTreeClassifier,
+        'lightgbm': LGBMClassifier
     }
     return models[model_name](**params)
 
