@@ -4,7 +4,7 @@ from experiments_config import experiments
 from datetime import datetime
 
 def main():
-    #preprocessing()  # opcional
+    #preprocessing()
 
     all_results = []
 

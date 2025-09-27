@@ -3,7 +3,6 @@ from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.model_selection import ParameterGrid
 import pandas as pd
@@ -42,8 +41,7 @@ def get_model(model_name, params=None):
         'random_forest': RandomForestClassifier,
         'xgboost': XGBClassifier,
         'decision_tree': DecisionTreeClassifier,
-        'lightgbm': LGBMClassifier,
-        'svm': SVC
+        'lightgbm': LGBMClassifier
     }
     if params:
         return models[model_name](**params)
@@ -54,7 +52,6 @@ def run_experiment(exp):
     results = []
     data = load_datasets(exp['dataset'])
 
-    # Decide se é single ou grid
     if exp.get("mode", "single") == "single":
         param_list = [exp.get("parameters", {})]
         thresholds = [exp.get("threshold", 0.5)]
@@ -76,7 +73,7 @@ def run_experiment(exp):
     return results
 
 def save_results(all_results, filename):
-    # flatten list of lists
+
     flat_results = [item for sublist in all_results for item in sublist if item is not None]
     if not flat_results:
         print("Nenhum resultado válido para salvar!")
