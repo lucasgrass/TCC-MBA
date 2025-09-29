@@ -3,7 +3,8 @@ from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, fbeta_score
 from sklearn.model_selection import ParameterGrid
 import pandas as pd
 import os
@@ -26,11 +27,13 @@ def load_datasets(dataset_name):
 def evaluate_model(model, x_test, y_test, threshold=0.5):
     y_prob = model.predict_proba(x_test)[:, 1]
     y_pred = (y_prob >= threshold).astype(int)
+    
     return {
         'accuracy': accuracy_score(y_test, y_pred),
-        'precision': precision_score(y_test, y_pred),
+        'precision': precision_score(y_test, y_pred, zero_division=0),
         'recall': recall_score(y_test, y_pred),
-        'f1': f1_score(y_test, y_pred),
+        'f1': f1_score(y_test, y_pred, zero_division=0),
+        'f2': fbeta_score(y_test, y_pred, beta=2, zero_division=0),
         'auc_roc': roc_auc_score(y_test, y_prob),
         'threshold_used': threshold
     }
@@ -41,7 +44,8 @@ def get_model(model_name, params=None):
         'random_forest': RandomForestClassifier,
         'xgboost': XGBClassifier,
         'decision_tree': DecisionTreeClassifier,
-        'lightgbm': LGBMClassifier
+        'lightgbm': LGBMClassifier,
+        'svm': SVC
     }
     if params:
         return models[model_name](**params)

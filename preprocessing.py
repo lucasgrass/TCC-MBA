@@ -24,6 +24,8 @@ def load_and_clean_data():
     for col in numeric_cols:
         df = drop_outliers(df, col)
     print('\nAfter outliers function:', df.shape)
+
+    print(f"Number of columns: {len(df.columns)}")
     
     return df, base_path
 
@@ -94,6 +96,7 @@ def create_all_features_datasets(df, base_path):
     X_tr_oh2, X_val_oh2, X_test_oh2 = onehot_encode(X_train, X_val, X_test, categorical_cols)
     X_tr_scaled, X_val_scaled, X_test_scaled = scale_numeric(X_tr_oh2, X_val_oh2, X_test_oh2, numeric_cols)
     train_dict = balance_train(X_tr_scaled, y_train)
+
     save_balanced_datasets(
         {k: v[0] for k, v in train_dict.items()},
         X_val_scaled, X_test_scaled,
@@ -177,12 +180,12 @@ def create_top10_fe_datasets(df, base_path):
     
     df = df.copy()
 
-    df["ValuePerHour"] = df["MonthlyCharges"] / (df["ViewingHoursPerWeek"] * 4 + 1e-6)
+    df["ValuePerHour"] = df["MonthlyCharges"] / (df["ViewingHoursPerWeek"] * 4 + 0.1)
     df['High_Cost_Low_Usage'] = (
         (df['MonthlyCharges'] > df['MonthlyCharges'].median()) &
         (df['ViewingHoursPerWeek'] < df['ViewingHoursPerWeek'].median())
     ).astype(int)
-    df['Support_Intensity'] = df['SupportTicketsPerMonth'] / (df['AccountAge'] + 1)
+    df['Support_Intensity'] = df['SupportTicketsPerMonth'] / (df['AccountAge'] + 0.1)
     
     used_features = top10_features + ['ValuePerHour', 'High_Cost_Low_Usage', 'Support_Intensity']
     

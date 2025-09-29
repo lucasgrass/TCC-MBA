@@ -1,0 +1,25 @@
+model	dataset	f1	auc_roc	accuracy	precision	recall	params	threshold_used f2
+logistic_regression	all_onehot_scaled_orig	0,405540196237871	0,750123354728023	0,54881711581979	0,26646482635797	0,848282118153986	{'solver': 'liblinear', 'class_weight': {0: 1, 1: 5}, 'random_state': 42, 'max_iter': 2000}	0,4	0,590440561317106
+logistic_regression	all_onehot_scaled_under	0,412726444115301	0,749890142772264	0,575848590824933	0,275590551181102	0,8215217144801	{'C': 10, 'class_weight': 'balanced', 'max_iter': 2000, 'penalty': 'l2', 'random_state': 42, 'solver': 'sag'}	0,4	0,588402501421262
+
+xgboost	all_label_category_over	0,407565278757939	0,739698951571228	0,568257560172804	0,271329775238668	0,818573534414333	{'n_estimators': 1000, 'max_depth': 4, 'learning_rate': 0.1, 'scale_pos_weight': 4, 'objective': 'binary:logistic', 'eval_metric': 'aucpr', 'random_state': 42}	0,35	0,58328754726738
+xgboost	all_label_category_orig	0,412491087979467	0,748319263422958	0,576198313104299	0,27554674998095	0,820047624447216	{'colsample_bytree': 0.8, 'eval_metric': 'aucpr', 'learning_rate': 0.01, 'max_depth': 3, 'n_estimators': 2000, 'objective': 'binary:logistic', 'random_state': 42, 'scale_pos_weight': 5, 'subsample': 0.8}	0,425	0,587757225057703
+
+random_forest	all_label_category_orig	0,397008114730086	0,73871225480611	0,534272783377906	0,25948485903237	0,845333938088219	{'n_estimators': 2000, 'max_depth': 8, 'class_weight': {0: 1, 1: 4}, 'max_features': 'log2', 'random_state': 42}	0,375	0,582367278067681
+random_forest	all_label_category_orig	0,418514650777075	0,74172895253194	0,610532812178564	0,286996082396057	0,77253656877197	{'n_estimators': 2000, 'max_depth': 10, 'class_weight': {0: 1, 1: 4}, 'max_features': 'log2', 'random_state': 42}	0,4	0,577226128950267
+
+svm	all_onehot_scaled_under	0,412354897042525	0,737180377576021	0,585517383254474	0,277574900852083	0,801564803265676	{'C': 1.0, 'kernel': 'rbf', 'gamma': 'scale', 'class_weight': 'balanced', 'probability': True, 'random_state': 42}	0,4	0,581877747230134
+svm	top10_onehot_scaled_under	0,399733124474226	0,711320598990138	0,574305698415964	0,268574101504639	0,78126771742828	{'C': 1.0, 'kernel': 'rbf', 'gamma': 'scale', 'class_weight': 'balanced', 'probability': True, 'random_state': 42}	0,4	0,565402921385196
+
+
+
+
+
+logistic_regression	all_onehot_scaled_orig	0,434167794316644	0,750123354728023	0,655914420901049	0,30938720408852	0,727633518539517	{'solver': 'liblinear', 'class_weight': {0: 1, 1: 5}, 'random_state': 42, 'max_iter': 2000}	0,5	0,572772551189817
+logistic_regression	all_onehot_scaled_under	0,438711074225093	0,749890142772264	0,680004114379757	0,32174235206944	0,689307177684545	{'C': 10, 'class_weight': 'balanced', 'max_iter': 2000, 'penalty': 'l2', 'random_state': 42, 'solver': 'sag'}	0,5	0,561103932065719
+xgboost	all_label_category_over	0,433246545163229	0,739698951571228	0,708928204073236	0,334943639291465	0,613221453679555	{'n_estimators': 1000, 'max_depth': 4, 'learning_rate': 0.1, 'scale_pos_weight': 4, 'objective': 'binary:logistic', 'eval_metric': 'aucpr', 'random_state': 42}	0,5	0,525844969079382
+xgboost	all_label_category_orig	0,432691011992993	0,748319263422958	0,653569224439416	0,30778816199377	0,728200476244472	{'n_estimators': 2000, 'max_depth': 3, 'learning_rate': 0.01, 'scale_pos_weight': 5, 'objective': 'binary:logistic', 'eval_metric': 'aucpr', 'random_state': 42, 'colsample_bytree': 0.8, 'subsample': 0.8}	0,5	0,571952761796192
+random_forest	all_label_category_orig	0,431543378251842	0,73871225480611	0,71275457724748	0,336636178861789	0,600975167252523	{'n_estimators': 2000, 'max_depth': 8, 'class_weight': {0: 1, 1: 4}, 'max_features': 'log2', 'random_state': 42}	0,5	0,519404155233242
+random_forest	all_label_category_orig	0,436331027414809	0,74172895253194	0,728450936021395	0,349955476402493	0,579317382923234	{'n_estimators': 2000, 'max_depth': 10, 'class_weight': {0: 1, 1: 4}, 'max_features': 'log2', 'random_state': 42}	0,5	0,51218045112782
+svm	all_onehot_scaled_under	0,433712054592142	0,737180377576021	0,668813001440033	0,314380418154003	0,699058850209774	{'C': 1.0, 'kernel': 'rbf', 'gamma': 'scale', 'class_weight': 'balanced', 'probability': True, 'random_state': 42}	0,5	0,561618627701053
+svm	top10_onehot_scaled_under	0,412455156560203	0,711320598990138	0,652972639374614	0,297657349688317	0,67139131420796	{'C': 1.0, 'kernel': 'rbf', 'gamma': 'scale', 'class_weight': 'balanced', 'probability': True, 'random_state': 42}	0,5	0,536633555684455
